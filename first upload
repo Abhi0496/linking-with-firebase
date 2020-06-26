@@ -1,0 +1,165 @@
+import random
+from PIL import Image as im
+from captcha.image import ImageCaptcha
+from firebase.firebase import FirebaseApplication
+fa = FirebaseApplication("https://firstpro-f433c.firebaseio.com/")
+
+
+
+def ini(acc_no):
+    while True:
+        name = input("Enter your full name: ").title()
+        if len(name) == 0 or len(name.split(" ")) > 3:   # mainly name contains first, middle and last. So after applying split len should'nt be more than 3
+            print("Invalid input")
+            continue
+        else:
+            break
+
+    while True:
+        try:
+            contact_no = int(input("Enter 10 digit mobile number: "))
+        except ValueError:
+            print("Please enter numerical value only")
+            continue
+        else:
+            break
+
+    while True:
+
+        try:
+            pin_no = int(input("Enter 4 digit numerical pin-no: "))
+        except ValueError:
+            print("Invalid Input")
+            continue
+        else:
+            break
+
+    while True:
+        try:
+            deposit = int(input("Enter amount you want to deposit: "))
+            if deposit <= 0:
+                print("You need some positive minimum amount to open account")
+                continue
+        except ValueError:    #If user enter non numerical, then instead of stopping program it will ask user to enter again
+            print("Invalid Input")
+            continue
+        else:
+            break
+
+    balance = deposit
+
+    #below code is used for captcha for verification
+    while True:
+        srn = []
+        for i in range(4):
+            req = random.randint(48, 90)     # so that captcha will contain numbers + special symbols + alphabets
+            srn.append(chr(req))
+        cap = ''.join(srn)       #converting list to string
+
+        ic = ImageCaptcha()
+        ic.write(cap ,"captcha.png")
+        im.open("captcha.png").show()
+        num = (input("Enter captcha "))
+        if num == cap:
+            break
+        else:
+            continue
+
+    details = {"Name": name, "Balance": balance, "Pin no": pin_no, "Contact no": contact_no}
+    fa.put("Account Details", acc_no, details)
+    print('''Account created successfully!
+    Your account number is''', acc_no,
+          '''Please remember it for all future transaction''')
+
+
+def chck_bal():
+    print("Your balance is: ",acc_details["Balance"])
+
+def withdraw(acc_no):
+    prev_bal = acc_details["Balance"]
+    while True:
+        withdraw = int(input("Enter Amount you want to withdraw: "))
+        if withdraw % 100 != 0 :
+            print("Please enter multiple of 100's only")
+            continue
+        elif withdraw > prev_bal:
+            print("Insufficient Balance")
+            continue
+        else:
+            new_bal = prev_bal - withdraw
+            print('''Amount Successfully withdrawn!
+            Your balance is''',new_bal)
+            acc_details["Balance"] = new_bal
+            fa.put("Account Details", acc_no, acc_details)
+            break
+
+def deposit(acc_no):
+    deposit = int(input("Enter Amount you want to deposit: "))
+    acc_details["Balance"] += deposit
+    fa.put("Account Details", acc_no, acc_details)
+    print("Amount is deposited successfully")
+
+def change_pin(acc_no):
+    while True:
+        try:
+            new_pin = int(input("Enter new 4 digit numerical pin-no: "))
+        except ValueError:
+            print("Invalid Input")
+            continue
+        else:
+            break
+    acc_details["Pin no"] = new_pin
+
+    fa.put("Account Details",acc_no,acc_details)
+    print("Pin changed Successfully")
+
+while True:
+    ques = input("Do you have bank account (Y/N): ")
+    if ques == "Y":
+        res = fa.get("Account Details",None)
+        acc_lst = list(res.keys())
+
+        while True:
+            acc_no = input("Enter your account no: ")
+            if acc_no in acc_lst:
+                acc_details = fa.get("Account Details",acc_no)
+                print("Welcome", acc_details["Name"])
+                break
+            else:
+                print("Invalid input")
+                continue
+        while True:
+            pin_no = int(input("Please enter your 4 digit pin no: "))
+            if pin_no == acc_details["Pin no"]:
+                print("Welcome")
+                break
+            else:
+                print("Invalid Pin no. Please Try again")
+                continue
+
+        while True:
+            action = input(''' Press appropriate number
+                (1) Check Balance
+                (2) Withdraw
+                (3) Deposit
+                (4) Change Pin: \t''')
+            if action == '1':
+                chck_bal()
+                break
+            elif action == '2':
+                withdraw(acc_no)
+                break
+            elif action == '3':
+                deposit(acc_no)
+                break
+            elif action == '4':
+                change_pin(acc_no)
+                break
+            else:
+                print("Please select appropriate number")
+                continue
+    else:
+        res = fa.get("Account Details",None)
+        acc_lst = list(res.keys())  # Here it will take all the account numbers already present and form a list
+        ini(int(acc_lst[-1]) + 1)   # here it will take last account number add 1, and that will be account number of new account
+                                    # so account number will be system generated
