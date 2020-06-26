@@ -2,7 +2,7 @@ import random
 from PIL import Image as im
 from captcha.image import ImageCaptcha
 from firebase.firebase import FirebaseApplication
-fa = FirebaseApplication("https://firstpro-f433c.firebaseio.com/")
+fa = FirebaseApplication("https-----------------------com/")
 
 
 
